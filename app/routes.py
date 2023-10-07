@@ -80,23 +80,23 @@ def split_text_into_segments(text, max_length):
     return segments
 
 @app.route('/stories', methods=['POST'])
-@jwt_required()
+#@jwt_required()
 def generate_story():
     data = request.get_json()
     plot = data.get('plot')
-    maincharacter = data.get('maincharacter')
+    mainCharacter = data.get('mainCharacter')
     place = data.get('place')
     genre = data.get('genre')
     audience = data.get('audience')
 
-    if not plot or not maincharacter or not place or not genre or not audience:
+    if not plot or not mainCharacter or not place or not genre or not audience:
         return jsonify({'error': 'Missing data'}), 400
 
     # Construct the prompt with the specified characteristics
     prompt = (
         f"Genera una historia con las siguientes caracteristicas: "
         f"sinopsis: {plot}. "
-        f"Nombre del personaje principal: {maincharacter}. "
+        f"Nombre del personaje principal: {mainCharacter}. "
         f"Lugar donde se encuentra ambientada la historia: {place}. "
         f"Genero: {genre}. "
         f"Publico a quien va dirigida la historia: {audience}"
@@ -145,9 +145,15 @@ def generate_story():
     # Commit the changes to the database session
     db.session.commit()
 
+    rpta = {}
+    rpta['story'] = generated_story
+    rpta['images'] = image_urls
+
     # Now, you have a list of image URLs for each segment
     # You can return them in the API response or use them as needed
-    return jsonify({'message': 'Story generated and saved successfully', 'image_urls': image_urls}), 201
+    #return jsonify({'message': 'Story generated and saved successfully', 'image_urls': image_urls}), 201
+    print('REPTA: ', rpta)
+    return rpta
 
 @app.route('/stories/<int:story_id>', methods=['GET'])
 @jwt_required()
@@ -159,22 +165,29 @@ def get_story(story_id):
 
     return jsonify({'story': story.content}), 200
 
-@app.route('/stories/<int:story_id>/questions', methods=['POST'])
-@jwt_required()
-def generate_and_store_questions(story_id):
+@app.route('/stories/questions', methods=['POST'])
+def generate_and_store_questions():
+    #REQUEST BODY:
+    data = request.get_json()
+    story = data.get('story')
+
     # Retrieve the story based on the provided story_id
-    story = Story.query.get(story_id)
+    #story = Story.query.get(story_id)
 
     if not story:
         return jsonify({'error': 'Story not found'}), 404
 
     # Generate questions using the OpenAI API based on the story
-    generated_questions = generate_questions_with_openai(story.content)
+    generated_questions = generate_questions_with_openai(story)
 
+    
     # Store the generated questions and options in the database
-    store_generated_questions(story.id, generated_questions)
+    #store_generated_questions(story.id, generated_questions)
 
-    return jsonify({'message': 'Questions generated and stored successfully'}), 201
+    #return jsonify({'message': 'Questions generated and stored successfully'}), 201
+    print(generated_questions)
+    return generated_questions
+    
 
 def store_generated_questions(story_id, generated_questions):
     # Iterate through the generated questions and options

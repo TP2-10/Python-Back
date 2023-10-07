@@ -30,6 +30,8 @@ def generate_questions_with_openai(story_content):
             temperature = 0.9,
             n=5  # Generate 5 questions
         )
+        rpta1 = response
+        print(rpta1)
 
         generated_questions = parse_generated_questions(response.choices)
         return generated_questions
@@ -38,10 +40,22 @@ def generate_questions_with_openai(story_content):
         return {}
 
 def parse_generated_questions(choices):
-    generated_questions = {}
+    generated_questions = []
+    options_prefix = ["Option A", "Option B", "Option C"]  # Puedes personalizar tus opciones aquí
+
     for idx, choice in enumerate(choices):
-        question_text = f"Question {idx + 1}: {choice.text.strip()}"
-        options = ["Option A", "Option B", "Option C"]  # Replace with your options
-        generated_questions[question_text] = options
+        text = choice.text.strip()
+        question_parts = text.split('\n')
+        
+        question_text = question_parts[0]  # El primer elemento es el enunciado de la pregunta
+        options = [f"{option}" for _, option in enumerate(question_parts[1:])]
+        
+        question_data = {
+            "id": idx + 1,
+            "question_text": question_text,
+            "options": options
+        }
+
+        generated_questions.append(question_data)
 
     return generated_questions
