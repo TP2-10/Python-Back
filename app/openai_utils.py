@@ -2,7 +2,7 @@
 import openai
 
 # Load OpenAI API key from the configuration
-OPENAI_API_KEY = ''
+OPENAI_API_KEY = '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'
 
 openai.api_key = OPENAI_API_KEY
 
@@ -25,7 +25,7 @@ def generate_questions_with_openai(story_content):
     try:
         response = openai.Completion.create(
             engine="text-davinci-003",
-            prompt=f"Generate a multiple-choice questions with only a , b or c ( the options must have the following format : a) , b), c) ) based on the following story:\n\n{story_content}",
+            prompt=f"Generate a multiple-choice questions with only a , b or c ( the options must have the following format : a) , b), c) and mention which is the correct alternantive (a , b or c) based on the following story:\n\n{story_content}",
             max_tokens=2000,  # Adjust as needed
             temperature = 0.9,
             n=5  # Generate 5 questions
@@ -59,3 +59,21 @@ def parse_generated_questions(choices):
         generated_questions.append(question_data)
 
     return generated_questions
+
+
+def generate_prompts_images_with_openai(story_content):
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=f"En base a esta historia:\n\n{story_content}\n\n. Por favor, genera 5 prompts detallados para enviar a Dall-e y generar imagenes sobre la historia",
+            max_tokens=2000,  # Adjust the desired length of the generated story
+            n=1
+        )
+
+        print(response)
+
+        generated_prompts = response.choices
+        return generated_prompts
+    except Exception as e:
+        print(f"Error generating story: {e}")
+        return None

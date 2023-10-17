@@ -1,11 +1,12 @@
-from flask import request, jsonify
+from flask import request, jsonify, send_file
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required
 from app import app, db
 import openai
 from app.models import Story, Question, Option , Image
 from app.models import User
-from app.openai_utils import generate_story_with_openai, generate_questions_with_openai
+from app.openai_utils import generate_story_with_openai, generate_questions_with_openai, generate_prompts_images_with_openai
+from gtts import gTTS
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -229,3 +230,39 @@ def get_story_questions(story_id):
         questions_data.append(question_data)
 
     return jsonify({'story_id': story.id, 'questions': questions_data}), 200
+
+
+@app.route('/stories/prompts', methods=['POST'])
+def generate_prompst_for_images():
+    #REQUEST BODY:
+    data = request.get_json()
+    story = data.get('story')
+
+    if not story:
+        return jsonify({'error': 'Story not found'}), 404
+
+    # Generate prompts for images using the OpenAI API based on the story
+    generated_prompts = generate_prompts_images_with_openai(story)
+
+    #return jsonify({'message': 'Questions generated and stored successfully'}), 201
+    print(generated_prompts)
+    return generated_prompts
+
+
+#SERVICIO DE GENERACION DE AUDIO PARA TEXTO
+@app.route('/generate_audio', methods=['POST'])
+def generate_audio():
+    try:
+        data = request.get_json()
+        text = data['text']
+
+        # Genera el audio
+        tts = gTTS(text, lang='es')
+        audio_filename = 'C:\\Users\\carlo\\Documents\\TP2 Proyect\\Backend\\Python-Back\\generated_audio.mp3'
+        tts.save(audio_filename)
+        print("Hasta aqui:")
+
+        # Envía el archivo de audio al cliente
+        return send_file(audio_filename, mimetype='audio/mpeg')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
