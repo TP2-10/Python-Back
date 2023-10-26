@@ -2,7 +2,7 @@
 import openai
 
 # Load OpenAI API key from the configuration
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = ''
 
 openai.api_key = OPENAI_API_KEY
 
@@ -25,7 +25,13 @@ def generate_questions_with_openai(story_content):
     try:
         response = openai.Completion.create(
             engine="text-davinci-003",
-            prompt=f"Generate a multiple-choice questions with only a , b or c ( the options must have the following format : a) , b), c) and mention which is the correct alternantive (a , b or c) based on the following story:\n\n{story_content}",
+            prompt = ("generate a multiple-choice question. Ensure that the question follows this format:\n"
+                        "[Insert your question text here]\n"
+                        "a) [Option A text]\n"
+                        "b) [Option B text]\n"
+                        "c) [Option C text]\n"
+                        "Correct answer: [Indicate which of the options (a, b, or c) is the correct answer]\n"
+                        f"based on the following story:\n\n{story_content}"),
             max_tokens=2000,  # Adjust as needed
             temperature = 0.9,
             n=5  # Generate 5 questions
@@ -41,7 +47,7 @@ def generate_questions_with_openai(story_content):
 
 def parse_generated_questions(choices):
     generated_questions = []
-    options_prefix = ["Option A", "Option B", "Option C"]  # Puedes personalizar tus opciones aquí
+    #options_prefix = ["Option A", "Option B", "Option C"]  # Puedes personalizar tus opciones aquí
 
     for idx, choice in enumerate(choices):
         text = choice.text.strip()
@@ -65,15 +71,27 @@ def generate_prompts_images_with_openai(story_content):
     try:
         response = openai.Completion.create(
             engine="text-davinci-003",
-            prompt=f"En base a esta historia:\n\n{story_content}\n\n. Por favor, genera 5 prompts detallados para enviar a Dall-e y generar imagenes sobre la historia",
+            prompt=f"Lee la siguiente historia:\n\n{story_content}\n\n. Quiero generar imagenes con DALL-E que se relacionen con la hisotoria. Genera 5 prompts de imagenes sobre la historia para enviar a DALL-E. Las imagenes deben tener un estilo animado que sea agradable para niños",
             max_tokens=2000,  # Adjust the desired length of the generated story
             n=1
         )
 
         print(response)
 
-        generated_prompts = response.choices
-        return generated_prompts
+        generated_prompts = response.choices[0].text.strip()
+
+        separated_prompts = generated_prompts.split('\n')
+        new_separated_prompts = []
+
+        for prompt in separated_prompts:
+            if len(prompt) > 5:
+                new_separated_prompts.append(prompt)
+        
+
+        print('----SEPARETED PROMOPTS------')
+        print(new_separated_prompts)
+
+        return new_separated_prompts
     except Exception as e:
         print(f"Error generating story: {e}")
         return None
