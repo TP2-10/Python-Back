@@ -95,12 +95,12 @@ def generate_story():
 
     # Construct the prompt with the specified characteristics
     prompt = (
-        f"Genera una historia con las siguientes caracteristicas: "
-        f"sinopsis: {plot}. "
-        f"Nombre del personaje principal: {mainCharacter}. "
-        f"Lugar donde se encuentra ambientada la historia: {place}. "
-        f"Genero: {genre}. "
-        f"Publico a quien va dirigida la historia: {audience}. "
+        "Genera una historia con las siguientes caracteristicas:\n"
+        f"sinopsis: {plot}.\n"
+        f"Personajes de la historia:\n{mainCharacter}.\n"
+        f"Lugar donde se encuentra ambientada la historia: {place}.\n"
+        f"Genero: {genre}.\n"
+        f"Publico a quien va dirigida la historia: {audience}.\n"
         f"La historia debe tener tres partes: inicio, trama y final. "
     )
 
@@ -122,33 +122,7 @@ def generate_story():
     separated_prompts = generate_prompts_images_with_openai(generated_story)
     print(separated_prompts)
 
-    # Initialize a list to store the image URLs for each segment
-    image_urls = []
-
-    for segment in separated_prompts:
-        try:
-            # Generate an image related to the story segment
-            image_response = openai.Image.create(
-                prompt=segment,
-                n=1,
-                size="1024x1024"
-            )
-
-            # Retrieve the URL of the generated image
-            image_url = image_response['data'][0]['url']
-
-            # Create an Image instance and associate it with the story
-            image = Image(story_id=story.id, url=image_url)
-
-            # Add the image to the database session
-            db.session.add(image)
-
-            # Append the image URL to the list
-            image_urls.append(image_url)
-
-        except Exception as e:
-            print(f"Error generating image with OpenAI: {e}")
-            # Handle the error as needed
+    image_urls = generate_images(story, separated_prompts)
 
     # Commit the changes to the database session
     db.session.commit()
@@ -255,20 +229,12 @@ def generate_prompst_for_images():
     print(generated_prompts)
     return generated_prompts
 
-
+#CAMBIO
 #GENERAR IMAGENES
-@app.route('/stories/prompts/images', methods=['POST'])
-def generate_images():
-    #REQUEST BODY:
-    data = request.get_json()
-    story = data.get('story')
-
-    if not story:
-        return jsonify({'error': 'Story not found'}), 404
+#@app.route('/stories/images', methods=['POST'])
+def generate_images(story, separated_prompts):
 
     image_urls = []
-
-    separated_prompts = generate_prompts_images_with_openai(story)
 
     for segment in separated_prompts:
         try:
@@ -276,7 +242,7 @@ def generate_images():
             image_response = openai.Image.create(
                 prompt=segment,
                 n=1,
-                size="1024x1024"
+                size="512x512"
             )
 
             # Retrieve the URL of the generated image
@@ -295,18 +261,15 @@ def generate_images():
             print(f"Error generating image with OpenAI: {e}")
             # Handle the error as needed
 
-    # Commit the changes to the database session
-    db.session.commit()
-
-    rpta = image_url
+    rpta = image_urls
     #rpta['story'] = generated_story
     #rpta['images'] = image_urls
 
     # Now, you have a list of image URLs for each segment
     # You can return them in the API response or use them as needed
     #return jsonify({'message': 'Story generated and saved successfully', 'image_urls': image_urls}), 201
-    print('REPTA: ', rpta)
-    return image_url
+    print('RPTA: ', rpta)
+    return image_urls
 
 
 #SERVICIO DE GENERACION DE AUDIO PARA TEXTO

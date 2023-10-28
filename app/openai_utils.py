@@ -1,7 +1,7 @@
 # app/openai_utils.py
 import openai
 
-# Load OpenAI API key from the configuration
+# Load OpenAI API key from the configuration. Hidden key
 OPENAI_API_KEY = ''
 
 openai.api_key = OPENAI_API_KEY
