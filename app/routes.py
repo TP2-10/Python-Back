@@ -120,25 +120,38 @@ def generate_story():
 
     #Get images url from fuction
     separated_prompts = generate_prompts_images_with_openai(generated_story)
-    print(separated_prompts)
+    #print(separated_prompts)
 
-    image_urls = generate_images(story, separated_prompts)
+    #PARSE PROMPTS
+    converted_prompts = []
+    for single_prompt in separated_prompts:
+        styled_prompt = single_prompt + ' The style of the image should be cartoonish and colorful, with soft contours and sympathetic features on the characters. I want the image to convey joy and camaraderie.'
+        converted_prompts.append(styled_prompt) 
 
-    # Commit the changes to the database session
-    db.session.commit()
+    print('----CONVERTED PROMOPTS------')
+    print(converted_prompts)
 
-    rpta = {}
-    rpta['story'] = generated_story
-    rpta['images'] = image_urls
+    image_urls = generate_images(story, converted_prompts)
 
-    # Now, you have a list of image URLs for each segment
-    # You can return them in the API response or use them as needed
-    #return jsonify({'message': 'Story generated and saved successfully', 'image_urls': image_urls}), 201
-    print('REPTA: ', rpta)
-    return rpta
+    storyObject = Story.query.get(story.id)  # story.id debe contener el ID de la historia creada
+
+    # Verifica si la historia se guardó correctamente
+    if storyObject:
+        # Convierte el objeto de historia en un diccionario o cualquier otro formato
+        story_data = {
+            "id": storyObject.id,
+            "prompt": storyObject.prompt,
+            "content": storyObject.content
+        }
+
+        # Retorna la historia en formato JSON
+        return jsonify({'message': 'Historia creada con éxito', 'story': story_data, 'images_url':image_urls})
+    else:
+        return jsonify({'error': 'No se pudo guardar la historia en la base de datos'}, 500)
+
 
 @app.route('/stories/<int:story_id>', methods=['GET'])
-@jwt_required()
+#@jwt_required()
 def get_story(story_id):
     story = Story.query.get(story_id)
 
@@ -147,24 +160,23 @@ def get_story(story_id):
 
     return jsonify({'story': story.content}), 200
 
-@app.route('/stories/questions', methods=['POST'])
-def generate_and_store_questions():
+@app.route('/stories/<int:story_id>/questions', methods=['POST'])
+def generate_and_store_questions(story_id):
     #REQUEST BODY:
-    data = request.get_json()
-    story = data.get('story')
+    #data = request.get_json()
+    #story = data.get('story')
 
     # Retrieve the story based on the provided story_id
-    #story = Story.query.get(story_id)
+    story = Story.query.get(story_id)
 
     if not story:
         return jsonify({'error': 'Story not found'}), 404
 
     # Generate questions using the OpenAI API based on the story
-    generated_questions = generate_questions_with_openai(story)
+    generated_questions = generate_questions_with_openai(story.content)
 
-    
     # Store the generated questions and options in the database
-    #store_generated_questions(story.id, generated_questions)
+    store_generated_questions(story.id, generated_questions)
 
     #return jsonify({'message': 'Questions generated and stored successfully'}), 201
     print(generated_questions)
@@ -173,14 +185,15 @@ def generate_and_store_questions():
 
 def store_generated_questions(story_id, generated_questions):
     # Iterate through the generated questions and options
-    for question_text, options in generated_questions.items():
+    for quest in generated_questions:
         # Create a new Question instance and associate it with the story
-        question = Question(story_id=story_id, question_text=question_text)
+        question = Question(story_id=story_id, question_text=quest['question_text'])
         db.session.add(question)
         db.session.commit()  # Commit here to obtain the question ID
 
         # Iterate through the options for the current question
-        for option_text in options:
+
+        for option_text in quest['options']:
             # Create a new Option instance associated with the current question
             option = Option(question_id=question.id, text=option_text)
             db.session.add(option)
@@ -188,7 +201,7 @@ def store_generated_questions(story_id, generated_questions):
     db.session.commit()
 
 @app.route('/stories/<int:story_id>/questions', methods=['GET'])
-@jwt_required()
+#@jwt_required()
 def get_story_questions(story_id):
     # Query the database to retrieve questions for the specific story
     questions = Question.query.filter_by(story_id=story_id).all()
@@ -211,6 +224,18 @@ def get_story_questions(story_id):
         questions_data.append(question_data)
 
     return jsonify({'story_id': story.id, 'questions': questions_data}), 200
+
+
+@app.route('/stories/questions/options/<int:option_id>', methods=['GET'])
+#@jwt_required()
+def getOptionById(option_id):
+    # Query the database to retrieve questions for the specific story
+    option = Option.query.get(option_id)
+
+    if not option:
+        return jsonify({'error': 'Story not found'}), 404
+
+    return jsonify({'id': option.id, 'option': option.text}), 200
 
 
 @app.route('/stories/prompts', methods=['POST'])

@@ -71,7 +71,8 @@ def generate_prompts_images_with_openai(story_content):
     try:
         response = openai.Completion.create(
             engine="text-davinci-003",
-            prompt=f"Lee la siguiente historia:\n\n{story_content}\n\n. Quiero generar imagenes con DALL-E que se relacionen con la hisotoria. Genera 5 prompts de imagenes sobre la historia para enviar a DALL-E. Las imagenes deben tener un estilo animado que sea agradable para niños",
+            #prompt=f"Lee la siguiente historia:\n\n{story_content}\n\n. Quiero generar imagenes con DALL-E que se relacionen con la hisotoria. Genera 5 prompts de imagenes sobre la historia para enviar a DALL-E. Las imagenes deben tener un estilo animado que sea agradable para niños",
+            prompt=f"Read the following story: \n\n{story_content}\n\n. I want to generate images with DALL-E in a style that is animated and child-friendly. Please create 5 image prompts related to the story, in each prompt, include terms to specify that the image has a animation style like cartoon. Do not use characters' own names, use generic terms (child, man, woman, etc.)",            
             max_tokens=2000,  # Adjust the desired length of the generated story
             n=1
         )
