@@ -2,14 +2,14 @@
 import openai
 
 # Load OpenAI API key from the configuration. Hidden key
-OPENAI_API_KEY = ''
+OPENAI_API_KEY = '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'
 
 openai.api_key = OPENAI_API_KEY
 
 def generate_story_with_openai(prompt):
     try:
         response = openai.Completion.create(
-            engine="text-davinci-003",
+            engine="gpt-3.5-turbo-instruct",
             prompt=prompt,
             max_tokens=2000,  # Adjust the desired length of the generated story
             n=1
@@ -24,7 +24,7 @@ def generate_story_with_openai(prompt):
 def generate_questions_with_openai(story_content):
     try:
         response = openai.Completion.create(
-            engine="text-davinci-003",
+            engine="gpt-3.5-turbo-instruct",
             prompt = ("generate a multiple-choice question. Ensure that the question follows this format:\n"
                         "[Insert your question text here]\n"
                         "a) [Option A text]\n"
@@ -70,9 +70,9 @@ def parse_generated_questions(choices):
 def generate_prompts_images_with_openai(story_content):
     try:
         response = openai.Completion.create(
-            engine="text-davinci-003",
+            engine="gpt-3.5-turbo-instruct",
             #prompt=f"Lee la siguiente historia:\n\n{story_content}\n\n. Quiero generar imagenes con DALL-E que se relacionen con la hisotoria. Genera 5 prompts de imagenes sobre la historia para enviar a DALL-E. Las imagenes deben tener un estilo animado que sea agradable para niños",
-            prompt=f"Read the following story: \n\n{story_content}\n\n. I want to generate images with DALL-E in a style that is animated and child-friendly. Please create 5 image prompts related to the story, in each prompt, include terms to specify that the image has a animation style like cartoon. Do not use characters' own names, use generic terms (child, man, woman, etc.)",            
+            prompt=f"Read the following story: \n\n{story_content}\n\n. I want to generate images with DALL-E in a style that is animated and child-friendly. Please create 3 image prompts related to the story, in each prompt, include terms to specify that the image has a animation style like cartoon. Do not use characters' own names, use generic terms (child, man, woman, etc.)",            
             max_tokens=2000,  # Adjust the desired length of the generated story
             n=1
         )

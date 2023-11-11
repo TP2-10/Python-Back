@@ -7,6 +7,7 @@ from app.models import Story, Question, Option , Image
 from app.models import User
 from app.openai_utils import generate_story_with_openai, generate_questions_with_openai, generate_prompts_images_with_openai
 from gtts import gTTS
+import speech_recognition as sr
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -145,6 +146,7 @@ def generate_story():
         }
 
         # Retorna la historia en formato JSON
+        print(story_data)
         return jsonify({'message': 'Historia creada con éxito', 'story': story_data, 'images_url':image_urls})
     else:
         return jsonify({'error': 'No se pudo guardar la historia en la base de datos'}, 500)
@@ -286,6 +288,8 @@ def generate_images(story, separated_prompts):
             print(f"Error generating image with OpenAI: {e}")
             # Handle the error as needed
 
+    db.session.commit()
+    
     rpta = image_urls
     #rpta['story'] = generated_story
     #rpta['images'] = image_urls
@@ -314,3 +318,45 @@ def generate_audio():
         return send_file(audio_filename, mimetype='audio/mpeg')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+
+@app.route('/stories/<int:story_id>/images', methods=['GET'])
+#@jwt_required()
+def get_imges_story(story_id):
+    # Query the database to retrieve questions for the specific story
+    images = Image.query.filter_by(story_id=story_id).all()
+
+    # Check if the story exists
+    story = Story.query.get(story_id)
+    if not story:
+        return jsonify({'error': 'Story not found'}), 404
+
+    # Create a list to store question data
+    images_url = []
+
+    # Iterate through the retrieved questions and add them to the list
+    for image in images:
+        images_url.append(image.url)
+
+    return jsonify(images_url), 200
+
+
+@app.route('/recognize', methods=['POST'])
+def recognize_audio():
+
+    # Inicializa el reconocedor de voz
+    recognizer = sr.Recognizer()
+
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No se proporcionaron datos de audio'}), 400
+
+    audio_file = request.files['audio']
+    try:
+        with sr.AudioFile(audio_file) as source:
+            audio_data = recognizer.record(source)
+            text = recognizer.recognize_google(audio_data, language="es-ES")
+            return jsonify({'transcription': text}), 200
+    except sr.UnknownValueError:
+        return jsonify({'transcription': ''}), 200
+    except sr.RequestError as e:
+        return jsonify({'error': 'Error en la solicitud a la API de Google: {0}'.format(e)}), 500
