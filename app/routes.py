@@ -5,7 +5,7 @@ from app import app, db
 import openai
 from app.models import Story, Question, Option , Image
 from app.models import User
-from app.openai_utils import generate_story_with_openai, generate_questions_with_openai, generate_prompts_images_with_openai
+from app.openai_utils import generate_story_with_openai, generate_questions_with_openai, generate_prompts_images_with_openai, generate_prompt_image_for_chapter, generate_image_for_chapter
 from gtts import gTTS
 import speech_recognition as sr
 
@@ -152,6 +152,130 @@ def generate_story():
         return jsonify({'error': 'No se pudo guardar la historia en la base de datos'}, 500)
 
 
+@app.route('/stories/opening', methods=['POST'])
+#@jwt_required()
+def generate_story_opening():
+    data = request.get_json()
+    plot = data.get('plot')
+    mainCharacter = data.get('mainCharacter')
+    place = data.get('place')
+    genre = data.get('genre')
+    audience = data.get('audience')
+
+    if not plot or not mainCharacter or not place or not genre or not audience:
+        return jsonify({'error': 'Missing data'}), 400
+
+    # Construct the prompt with the specified characteristics
+    prompt = (
+        "Te voy a envia una serie de caracteristicas para crear una historia:\n"
+        f"sinopsis: {plot}.\n"
+        f"Personajes de la historia:\n{mainCharacter}.\n"
+        f"Lugar donde se encuentra ambientada la historia: {place}.\n"
+        f"Genero: {genre}.\n"
+        f"Publico a quien va dirigida la historia: {audience}.\n"
+        f"En base a esas caracteristicas, genera el Inicio de una historia, donde se prensentan a los personajes, sus motivaciones y el lugar donde se desarrolla la historia.\n"
+        f"Recuerda que solo quiero el inicio de la historia.\n"
+    )
+
+    story_opening = generate_story_with_openai(prompt)
+
+    #Generate prompt for image of the chapter
+    #image_prompt = generate_prompt_image_for_chapter(story_opening)
+
+    #Generate image for chapter
+    #image_chapter = generate_image_for_chapter(image_prompt)
+
+    #Parsing data
+    response_data = {
+        "story_opening": story_opening
+        #"image_chapter": image_chapter
+        
+    }
+
+    print(response_data)
+
+    return response_data
+
+
+@app.route('/stories/new_chapter', methods=['POST'])
+#@jwt_required()
+def generate_new_chapter():
+    data = request.get_json()
+    story = data.get('story')
+    new_plot = data.get('new_plot')
+
+    if not story or not new_plot:
+        return jsonify({'error': 'Missing data'}), 400
+
+    # Construct the prompt with the specified characteristics
+    prompt = (
+        "Lee la siguiente historia:\n"
+        f"{story}.\n"
+        "Quiero que generes un nuevo capitulo para esa historia, siguiendo esta premisa:\n"
+        f"{new_plot}.\n"
+        "Haz que el capitulo sea interesante y atractivo para niños. No hagas el capitulo extenso para evitar que los niños se aburran al ver mucho texto. Esto debe ser solo un capitulo nuevo de la historia, no le des un final. Deja la historia en un punto donde los protagonistas puedan tomar diferentes elecciones o decisiones que afectaran el curso de la historia.\n"
+    )
+
+    new_chapter = generate_story_with_openai(prompt)
+
+    #Generate prompt for image of the chapter
+    #image_prompt = generate_prompt_image_for_chapter(new_chapter)
+
+    #Generate image for chapter
+    #image_chapter = generate_image_for_chapter(image_prompt)
+
+    #Parsing data
+    response_data = {
+        "new_chapter": new_chapter
+        #"image_chapter": image_chapter
+        
+    }
+
+    print(response_data)
+
+    return response_data
+
+
+@app.route('/stories/ending', methods=['POST'])
+#@jwt_required()
+def generate_story_ending():
+    data = request.get_json()
+    story = data.get('story')
+    final_plot = data.get('final_plot')
+
+    if not story or not final_plot:
+        return jsonify({'error': 'Missing data'}), 400
+
+    # Construct the prompt with the specified characteristics
+    prompt = (
+        "Lee la siguiente historia:\n"
+        f"{story}.\n"
+        "Genera un capitulo final para esa historia, siguiendo esta premisa:\n"
+        f"{final_plot}.\n"
+        "Dale a la historia un final definitivo.\n"
+    )
+
+    final_chapter = generate_story_with_openai(prompt)
+
+    #Generate prompt for image of the chapter
+    #image_prompt = generate_prompt_image_for_chapter(final_chapter)
+
+    #Generate image for chapter
+    #image_chapter = generate_image_for_chapter(image_prompt)
+
+    #Parsing data
+    response_data = {
+        "final_chapter": final_chapter
+        #"image_chapter": image_chapter
+        
+    }
+
+    print(response_data)
+
+    return response_data
+
+
+
 @app.route('/stories/<int:story_id>', methods=['GET'])
 #@jwt_required()
 def get_story(story_id):
@@ -256,6 +380,24 @@ def generate_prompst_for_images():
     print(generated_prompts)
     return generated_prompts
 
+
+
+@app.route('/stories/images/chapter', methods=['POST'])
+def generate_images_by_chapter():
+    #REQUEST BODY:
+    data = request.get_json()
+    prompt = data.get('prompt')
+
+    if not prompt:
+        return jsonify({'error': 'Story not found'}), 404
+
+    # Generate prompts for images using the OpenAI API based on the story
+    generated_img_url = generate_image_for_chapter(prompt)
+
+    #return jsonify({'message': 'Questions generated and stored successfully'}), 201
+    print(generated_img_url)
+    return generated_img_url
+
 #CAMBIO
 #GENERAR IMAGENES
 #@app.route('/stories/images', methods=['POST'])
@@ -269,7 +411,8 @@ def generate_images(story, separated_prompts):
             image_response = openai.Image.create(
                 prompt=segment,
                 n=1,
-                size="512x512"
+                size="1024x1024"
+                #model= "dall-e-3"
             )
 
             # Retrieve the URL of the generated image
