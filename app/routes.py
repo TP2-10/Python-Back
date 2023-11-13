@@ -9,6 +9,12 @@ from app.openai_utils import generate_story_with_openai, generate_questions_with
 from gtts import gTTS
 import speech_recognition as sr
 
+
+@app.route('/')
+def welcome():
+    return 'THE MULTIADVENTURE API IS UP AND RUNNING!!!!'
+
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
