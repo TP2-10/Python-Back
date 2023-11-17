@@ -5,7 +5,7 @@ from app import app, db
 import openai
 from app.models import Story, Question, Option , Image
 from app.models import User
-from app.openai_utils import generate_story_with_openai, generate_questions_with_openai, generate_prompts_images_with_openai, generate_prompt_image_for_chapter, generate_image_for_chapter
+from app.openai_utils import generate_story_with_openai, generate_questions_with_openai, generate_prompts_images_with_openai, generate_prompt_image_for_chapter, generate_image_for_chapter, generate_question_chapter_with_openai
 from gtts import gTTS
 import speech_recognition as sr
 
@@ -70,7 +70,7 @@ def login():
 
     if user and user.verify_password(password):
         access_token = create_access_token(identity=user.id)
-        return jsonify({'access_token': access_token}), 200
+        return jsonify({'message': 'User login successfully', 'access_token': access_token}), 200
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
 
@@ -82,7 +82,7 @@ def split_text_into_segments(text, max_length):
     return segments
 
 @app.route('/stories', methods=['POST'])
-#@jwt_required()
+@jwt_required()
 def generate_story():
     data = request.get_json()
     plot = data.get('plot')
@@ -180,15 +180,15 @@ def generate_story_opening():
     story_opening = generate_story_with_openai(prompt)
 
     #Generate prompt for image of the chapter
-    #image_prompt = generate_prompt_image_for_chapter(story_opening)
+    image_prompt = generate_prompt_image_for_chapter(story_opening)
 
     #Generate image for chapter
-    #image_chapter = generate_image_for_chapter(image_prompt)
+    image_chapter = generate_image_for_chapter(image_prompt)
 
     #Parsing data
     response_data = {
-        "story_opening": story_opening
-        #"image_chapter": image_chapter
+        "story_opening": story_opening,
+        "image_chapter": image_chapter
         
     }
 
@@ -213,21 +213,21 @@ def generate_new_chapter():
         f"{story}.\n"
         "Quiero que generes un nuevo capitulo para esa historia, siguiendo esta premisa:\n"
         f"{new_plot}.\n"
-        "Haz que el capitulo sea interesante y atractivo para niños. No hagas el capitulo extenso para evitar que los niños se aburran al ver mucho texto. Esto debe ser solo un capitulo nuevo de la historia, no le des un final. Deja la historia en un punto donde los protagonistas puedan tomar diferentes elecciones o decisiones que afectaran el curso de la historia.\n"
+        "Haz que el capitulo sea interesante y atractivo para niños. No hagas el capitulo extenso (maximo 3 parrafos). Esto debe ser solo un capitulo nuevo de la historia, no le des un final. Deja el capitulo en un punto donde los protagonistas deban tomar diferentes elecciones o decisiones que afectaran el curso de la historia.\n"
     )
 
     new_chapter = generate_story_with_openai(prompt)
 
     #Generate prompt for image of the chapter
-    #image_prompt = generate_prompt_image_for_chapter(new_chapter)
+    image_prompt = generate_prompt_image_for_chapter(new_chapter)
 
     #Generate image for chapter
-    #image_chapter = generate_image_for_chapter(image_prompt)
+    image_chapter = generate_image_for_chapter(image_prompt)
 
     #Parsing data
     response_data = {
-        "new_chapter": new_chapter
-        #"image_chapter": image_chapter
+        "new_chapter": new_chapter,
+        "image_chapter": image_chapter
         
     }
 
@@ -252,21 +252,21 @@ def generate_story_ending():
         f"{story}.\n"
         "Genera un capitulo final para esa historia, siguiendo esta premisa:\n"
         f"{final_plot}.\n"
-        "Dale a la historia un final definitivo.\n"
+        "Haz que el capitulo final sea interesante y atractivo para niños pequeños. No hagas el capitulo final extenso (maximo 3 parrafos). Dale a la historia un final definitivo.\n"
     )
 
     final_chapter = generate_story_with_openai(prompt)
 
     #Generate prompt for image of the chapter
-    #image_prompt = generate_prompt_image_for_chapter(final_chapter)
+    image_prompt = generate_prompt_image_for_chapter(final_chapter)
 
     #Generate image for chapter
-    #image_chapter = generate_image_for_chapter(image_prompt)
+    image_chapter = generate_image_for_chapter(image_prompt)
 
     #Parsing data
     response_data = {
-        "final_chapter": final_chapter
-        #"image_chapter": image_chapter
+        "final_chapter": final_chapter,
+        "image_chapter": image_chapter
         
     }
 
@@ -325,6 +325,24 @@ def store_generated_questions(story_id, generated_questions):
             db.session.add(option)
 
     db.session.commit()
+
+
+@app.route('/stories/chapter/question', methods=['POST'])
+def generate_question_by_chapter():
+    #REQUEST BODY:
+    data = request.get_json()
+    chapter = data.get('chapter')
+
+    if not chapter:
+        return jsonify({'error': 'Missing data'}), 404
+
+    # Generate questions using the OpenAI API based on the story
+    generated_question = generate_question_chapter_with_openai(chapter)
+
+    #return jsonify({'message': 'Questions generated and stored successfully'}), 201
+    print(generated_question)
+    return generated_question
+
 
 @app.route('/stories/<int:story_id>/questions', methods=['GET'])
 #@jwt_required()
