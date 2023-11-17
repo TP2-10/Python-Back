@@ -2,7 +2,7 @@
 import openai
 
 # Load OpenAI API key from the configuration. Hidden key
-OPENAI_API_KEY = 'AGREGAR TU API KEY'
+OPENAI_API_KEY = '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'
 
 openai.api_key = OPENAI_API_KEY
 
